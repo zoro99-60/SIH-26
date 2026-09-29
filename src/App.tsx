@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ChevronDown,
   CheckCircle2,
+  AlertOctagon,
   Building2,
   Users,
   Download,
@@ -23,6 +24,7 @@ import {
 import { KpiCard } from '@/components/KpiCard';
 import { ComplianceTable } from '@/components/ComplianceTable';
 import { MineMap } from '@/components/MineMap';
+import { HQDashboard } from '@/components/HQDashboard';
 
 // Type definitions for data integrity
 interface AlertItem {
@@ -521,15 +523,7 @@ const App: React.FC = () => {
             </>
           )}
 
-          {userRole === 'Corporate HQ' && (
-            <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm mt-4">
-              <div className="text-center">
-                <Building2 className="h-12 w-12 text-[#F59E0B] mx-auto mb-3" />
-                <h2 className="text-xl font-bold text-slate-800">Corporate HQ Dashboard</h2>
-                <p className="text-slate-500 mt-2">Strategic oversight and aggregate performance metrics will appear here.</p>
-              </div>
-            </div>
-          )}
+          {userRole === 'Corporate HQ' && <HQDashboard />}
 
           {userRole === 'Field Inspector' && (
             <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm mt-4">

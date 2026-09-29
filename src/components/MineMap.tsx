@@ -11,12 +11,10 @@ import {
   Radio,
   Sun,
   Moon,
-  Filter,
 } from 'lucide-react';
 
-// ---- View Mode & Zone Config ----
+// ---- View Mode Config ----
 type ViewMode = 'macro' | 'micro';
-export type ZoneOption = 'All Zones' | 'Pit 07' | 'Overburden Dump' | 'Haul Road';
 
 const VIEWS: Record<ViewMode, { center: [number, number]; zoom: number; label: string; sub: string }> = {
   macro: {
@@ -33,29 +31,6 @@ const VIEWS: Record<ViewMode, { center: [number, number]; zoom: number; label: s
   }
 };
 
-const ZONE_CONFIG: Record<ZoneOption, { center: [number, number]; zoom: number; description: string }> = {
-  'All Zones': {
-    center: [22.5, 82.5],
-    zoom: 5,
-    description: 'All mining zones across regions'
-  },
-  'Pit 07': {
-    center: [23.7537, 86.4203],
-    zoom: 12,
-    description: 'Active excavating pit & seam IV'
-  },
-  'Overburden Dump': {
-    center: [23.1452, 84.1050],
-    zoom: 9,
-    description: 'Waste rock & overburden disposal site'
-  },
-  'Haul Road': {
-    center: [23.9050, 84.8743],
-    zoom: 9,
-    description: 'HEMM heavy transport corridor'
-  }
-};
-
 // Standard OpenStreetMap tile layer — completely free, no API key required
 const OSM_TILE = {
   url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -69,18 +44,13 @@ function getRiskConfig(score: number) {
   return { color: '#DC2626', hex: '#EF4444', label: 'High', fill: '#EF4444', fillOpacity: 0.28 };
 }
 
-// ---- Inner controller — flies the map to the chosen view/zone ----
-function MapFlyController({ targetMode, targetZone }: { targetMode: ViewMode; targetZone: ZoneOption }) {
+// ---- Inner controller — flies the map to the chosen view ----
+function MapFlyController({ target }: { target: ViewMode }) {
   const map = useMap();
   React.useEffect(() => {
-    if (targetZone !== 'All Zones') {
-      const zConfig = ZONE_CONFIG[targetZone];
-      map.flyTo(zConfig.center, zConfig.zoom, { animate: true, duration: 1.4 });
-    } else {
-      const v = VIEWS[targetMode];
-      map.flyTo(v.center, v.zoom, { animate: true, duration: 1.4 });
-    }
-  }, [targetMode, targetZone, map]);
+    const v = VIEWS[target];
+    map.flyTo(v.center, v.zoom, { animate: true, duration: 1.4 });
+  }, [target, map]);
   return null;
 }
 
@@ -92,9 +62,9 @@ export interface MineMapProps {
 
 export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('macro');
-  const [selectedZone, setSelectedZone] = useState<ZoneOption>('All Zones');
   const [isDarkMap, setIsDarkMap] = useState(true);
   const [activeMineName, setActiveMineName] = useState<string | null>(null);
+
 
   const toggleView = useCallback(() => {
     setViewMode(prev => (prev === 'macro' ? 'micro' : 'macro'));
@@ -104,30 +74,16 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
     setIsDarkMap(prev => !prev);
   }, []);
 
-  const handleZoneChange = (zone: ZoneOption) => {
-    setSelectedZone(zone);
-    if (zone !== 'All Zones') {
-      setViewMode('micro');
-    }
-  };
-
   const currentView = VIEWS[viewMode];
-
-  // Filter markers based on selected zone
-  const filteredMines = selectedZone === 'All Zones'
-    ? mockComplianceData
-    : mockComplianceData.filter(m => m.zone === selectedZone);
 
   // HUD overlay styles based on map theme
   const hudBg = isDarkMap ? 'bg-[#1E293B]/90 border-slate-700/80 text-white' : 'bg-white/90 border-slate-300 text-slate-800';
   const hudText = isDarkMap ? 'text-slate-400' : 'text-slate-500';
 
-  const zoneOptions: ZoneOption[] = ['All Zones', 'Pit 07', 'Overburden Dump', 'Haul Road'];
-
   return (
     <div className={`rounded-lg border overflow-hidden flex flex-col shadow-xl ${isDarkMap ? 'bg-[#0F172A] border-slate-800' : 'bg-slate-100 border-slate-300'} ${className ?? ''}`}>
       {/* ---- Header Toolbar ---- */}
-      <div className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-3 shrink-0 ${isDarkMap ? 'bg-[#1E293B] border-slate-700/80' : 'bg-[#F8FAFC] border-slate-200'}`}>
+      <div className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-2 shrink-0 ${isDarkMap ? 'bg-[#1E293B] border-slate-700/80' : 'bg-[#F8FAFC] border-slate-200'}`}>
         <div className="flex items-center gap-2.5">
           <Radio className="h-4 w-4 text-[#F59E0B] animate-pulse" />
           <div>
@@ -135,84 +91,25 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
               Live GIS Spatial Telemetry
             </span>
             <span className={`ml-2 text-[10px] font-mono ${isDarkMap ? 'text-slate-500' : 'text-slate-400'}`}>
-              {selectedZone !== 'All Zones' ? `Zone: ${selectedZone}` : currentView.sub}
+              {currentView.sub}
             </span>
           </div>
+          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border hidden sm:inline ${isDarkMap ? 'text-slate-400 bg-slate-900 border-slate-700' : 'text-slate-500 bg-white border-slate-300'}`}>
+            23°45′18″N 86°25′09″E
+          </span>
         </div>
 
-        {/* Zone Selector & Legend Pills */}
-        <div className="flex items-center flex-wrap gap-2.5">
-          {/* Risk legend pills */}
-          <div className="flex items-center gap-1.5 text-[10px] font-mono mr-1">
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/30 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444] animate-ping" /> High
-            </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-[#F59E0B]/15 text-[#D97706] border border-[#F59E0B]/30 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]" /> Medium
-            </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-[#10B981]/15 text-[#059669] border border-[#10B981]/30 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" /> Low
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ---- Zone Filter Toolbar Bar Above Map ---- */}
-      <div className={`px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 text-xs ${
-        isDarkMap ? 'bg-[#182234] border-slate-700/60 text-slate-300' : 'bg-slate-200/70 border-slate-300 text-slate-700'
-      }`}>
-        <div className="flex items-center gap-2">
-          <Filter className="h-3.5 w-3.5 text-[#F59E0B]" />
-          <span className="font-semibold text-xs tracking-tight">Zone Filter:</span>
-          
-          {/* Dropdown Selector */}
-          <select
-            value={selectedZone}
-            onChange={(e) => handleZoneChange(e.target.value as ZoneOption)}
-            className={`px-2.5 py-1 rounded text-xs font-medium border shadow-sm outline-none cursor-pointer transition-colors ${
-              isDarkMap
-                ? 'bg-[#0F172A] border-slate-600 text-slate-100 hover:border-amber-500 focus:border-amber-500'
-                : 'bg-white border-slate-300 text-slate-800 hover:border-amber-500 focus:border-amber-500'
-            }`}
-          >
-            {zoneOptions.map((zone) => (
-              <option key={zone} value={zone} className={isDarkMap ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
-                {zone} {zone === 'All Zones' ? `(${mockComplianceData.length})` : `(${mockComplianceData.filter(m => m.zone === zone).length})`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Toggle Group Pills for Quick Access */}
-        <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-          {zoneOptions.map((zone) => {
-            const isSelected = selectedZone === zone;
-            const count = zone === 'All Zones' ? mockComplianceData.length : mockComplianceData.filter(m => m.zone === zone).length;
-            return (
-              <button
-                key={zone}
-                onClick={() => handleZoneChange(zone)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 shrink-0 ${
-                  isSelected
-                    ? 'bg-[#F59E0B] text-slate-950 font-bold shadow-md'
-                    : isDarkMap
-                    ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                    : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-300'
-                }`}
-              >
-                <span>{zone}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                  isSelected
-                    ? 'bg-slate-950/20 text-slate-950'
-                    : isDarkMap
-                    ? 'bg-slate-900 text-slate-400'
-                    : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        {/* Risk legend pills */}
+        <div className="flex items-center gap-1.5 text-[10px] font-mono">
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/30 rounded-full">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444] animate-ping" /> High
+          </span>
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-[#F59E0B]/15 text-[#D97706] border border-[#F59E0B]/30 rounded-full">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]" /> Medium
+          </span>
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-[#10B981]/15 text-[#059669] border border-[#10B981]/30 rounded-full">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" /> Low
+          </span>
         </div>
       </div>
 
@@ -232,10 +129,10 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
           />
 
           {/* Fly-to controller */}
-          <MapFlyController targetMode={viewMode} targetZone={selectedZone} />
+          <MapFlyController target={viewMode} />
 
-          {/* Filtered Mine markers */}
-          {filteredMines.map(mine => {
+          {/* Mine markers */}
+          {mockComplianceData.map(mine => {
             const risk = getRiskConfig(mine.aiRiskScore);
             const isActive = activeMineName === mine.mineName;
             return (
@@ -271,7 +168,7 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
                       minWidth: '200px',
                     }}
                   >
-                    {/* Risk badge + ID + Zone */}
+                    {/* Risk badge + ID */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{
                         fontSize: '10px', fontFamily: 'monospace', fontWeight: 700,
@@ -287,20 +184,13 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
                     </div>
 
                     {/* Mine name */}
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#F1F5F9', lineHeight: 1.3, marginBottom: '2px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#F1F5F9', lineHeight: 1.3, marginBottom: '4px' }}>
                       {mine.mineName}
-                    </div>
-
-                    {/* Zone Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '9px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#334155', color: '#CBD5E1', fontWeight: 600 }}>
-                        📍 Zone: {mine.zone}
-                      </span>
                     </div>
 
                     {/* Location */}
                     <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '8px', fontFamily: 'monospace' }}>
-                      {mine.location}
+                      📍 {mine.location}
                     </div>
 
                     {/* Stats */}
@@ -349,7 +239,6 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
         {/* ---- HUD: top-left telemetry tags ---- */}
         <div className="absolute top-3 left-3 z-[999] flex flex-col gap-1.5 pointer-events-none">
           {[
-            { label: 'ZONE', value: selectedZone },
             { label: 'DEPTH', value: '-148m MSL' },
             { label: 'WIND', value: '14 km/h WNW' },
             { label: 'PRESS', value: '1012 hPa' },
@@ -359,7 +248,7 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
               className={`px-2.5 py-1 rounded text-[10px] font-mono backdrop-blur-sm shadow border ${hudBg}`}
             >
               <span className={hudText}>{item.label}: </span>
-              <span className="font-bold text-[#F59E0B]">{item.value}</span>
+              <span className="font-bold">{item.value}</span>
             </div>
           ))}
         </div>
@@ -368,11 +257,11 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
         <div className="absolute bottom-3 left-3 z-[999] pointer-events-none">
           <div className={`px-3 py-1.5 rounded text-[10px] font-mono backdrop-blur-sm shadow border flex items-center gap-2 ${hudBg}`}>
             <Activity className="h-3 w-3 text-[#10B981] animate-pulse" />
-            <span className={hudText}>Showing</span>
-            <span className="font-bold">{filteredMines.length} Sites ({selectedZone})</span>
+            <span className={hudText}>Tracking</span>
+            <span className="font-bold">{mockComplianceData.length} Sites</span>
             <span className={`mx-1 ${isDarkMap ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
             <span className="text-[#EF4444] font-bold">
-              {filteredMines.filter(m => m.aiRiskScore > 80).length} High Risk
+              {mockComplianceData.filter(m => m.aiRiskScore > 80).length} High Risk
             </span>
           </div>
         </div>
@@ -428,8 +317,8 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
           <div className={`px-2 py-1 rounded text-center font-mono text-[9px] backdrop-blur-sm border ${
             isDarkMap ? 'bg-[#0F172A]/90 border-slate-700' : 'bg-white/90 border-slate-300'
           }`}>
-            <span className={isDarkMap ? 'text-slate-400' : 'text-slate-500'}>Zone: </span>
-            <span className="text-[#D97706] font-extrabold uppercase">{selectedZone}</span>
+            <span className={isDarkMap ? 'text-slate-400' : 'text-slate-500'}>Mode: </span>
+            <span className="text-[#D97706] font-extrabold uppercase">{viewMode}</span>
           </div>
         </div>
 
@@ -472,8 +361,8 @@ export const MineMap: React.FC<MineMapProps> = ({ className, onViewTelemetry }) 
         </div>
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-3 w-3 text-[#F59E0B]" />
-          <span className={isDarkMap ? 'text-slate-400' : 'text-slate-500'}>Active Filter: </span>
-          <span className={`font-bold ${isDarkMap ? 'text-amber-400' : 'text-amber-700'}`}>{selectedZone}</span>
+          <span className={isDarkMap ? 'text-slate-400' : 'text-slate-500'}>CRS: </span>
+          <span className={`font-bold ${isDarkMap ? 'text-slate-200' : 'text-slate-800'}`}>WGS84 / EPSG:4326</span>
         </div>
       </div>
     </div>
