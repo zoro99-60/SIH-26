@@ -7,86 +7,50 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockComplianceData, type MineComplianceRecord } from '@/mockData';
-import { HardHat, Eye, AlertTriangle, MapPin, Calendar, Search, ShieldCheck } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShieldCheck, MapPin, Clock, User, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface ComplianceTableProps {
-  data?: MineComplianceRecord[];
-  onDispatchInspector?: (record: MineComplianceRecord) => void;
-  onViewDetails?: (record: MineComplianceRecord) => void;
-  className?: string;
+export interface ActionItem {
+  id: string;
+  issue: string;
+  location: string;
+  dueDate: string;
+  assignedTo: string;
+  status: string;
 }
 
-export const ComplianceTable: React.FC<ComplianceTableProps> = ({
-  data = mockComplianceData,
-  onDispatchInspector,
-  onViewDetails,
-  className,
-}) => {
-  const [searchQuery, setSearchQuery] = useState('');
+const mockActions: Record<string, ActionItem[]> = {
+  "Today's Inspection Queue": [
+    { id: '1', issue: 'Ventilation Fan V-04 Check', location: 'Seam III North', dueDate: 'Today, 14:00', assignedTo: 'Inspector R. Sharma', status: 'Scheduled' },
+    { id: '2', issue: 'Haul Road Dust Suppression', location: 'Pit 2 Ramp', dueDate: 'Today, 16:30', assignedTo: 'Team Alpha', status: 'Pending' },
+  ],
+  "Overdue Actions": [
+    { id: '3', issue: 'Roof Bolting Validation', location: 'Underground Face 4B', dueDate: 'Yesterday', assignedTo: 'Safety Officer K. Patel', status: 'Overdue' },
+    { id: '4', issue: 'Equipment Audit (Excavator #12)', location: 'East Block', dueDate: '2 Days Ago', assignedTo: 'Maint. Team', status: 'Overdue' },
+  ],
+  "Compliance Due Soon": [
+    { id: '5', issue: 'Monthly Water Quality Report', location: 'Effluent Plant', dueDate: 'In 2 days', assignedTo: 'Env. Engineer S. Das', status: 'Pending' },
+    { id: '6', issue: 'Noise Level Assessment', location: 'Crusher Zone', dueDate: 'In 3 days', assignedTo: 'Inspector R. Sharma', status: 'Scheduled' },
+  ],
+  "Recently Closed Actions": [
+    { id: '7', issue: 'Explosives Magazine Audit', location: 'Magazine Zone A', dueDate: 'Yesterday', assignedTo: 'Inspector R. Sharma', status: 'Closed' },
+  ]
+};
 
-  const filteredData = data.filter(
-    (item) =>
-      item.mineName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.subsidiary ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+const statusColors: Record<string, string> = {
+  'Scheduled': 'bg-blue-100 text-blue-700 border-blue-200',
+  'Pending': 'bg-amber-100 text-amber-700 border-amber-200',
+  'Overdue': 'bg-red-100 text-red-700 border-red-200',
+  'Closed': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
 
-  /**
-   * AI Risk Score badge:
-   *   < 50  → Green  (Low Risk)
-   *   50–80 → Amber  (Medium Risk)
-   *   > 80  → Red    (High Risk)
-   */
-  const renderRiskBadge = (score: number) => {
-    if (score < 50) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-[#10B981]/10 text-[#059669] border border-[#10B981]/25">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-          {score} — Low Risk
-        </span>
-      );
-    } else if (score <= 80) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-[#F59E0B]/10 text-[#D97706] border border-[#F59E0B]/25">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#F59E0B]" />
-          {score} — Medium Risk
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-[#EF4444]/10 text-[#DC2626] border border-[#EF4444]/25">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444] animate-pulse" />
-          {score} — High Risk
-        </span>
-      );
-    }
-  };
-
-  const handleDispatch = (record: MineComplianceRecord) => {
-    if (onDispatchInspector) {
-      onDispatchInspector(record);
-    } else {
-      // eslint-disable-next-line no-alert
-      alert(`Dispatching DGMS Inspector to:\n${record.mineName}\n${record.location}`);
-    }
-  };
-
-  const handleView = (record: MineComplianceRecord) => {
-    if (onViewDetails) {
-      onViewDetails(record);
-    } else {
-      // eslint-disable-next-line no-alert
-      alert(`Viewing details for: ${record.mineName} (${record.id})`);
-    }
-  };
+export const ComplianceTable: React.FC = () => {
+  const tabs = Object.keys(mockActions);
+  const [activeTab, setActiveTab] = useState(tabs[0]);
 
   return (
-    <div className={cn("bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden font-sans", className)}>
-      {/* ------------------------------------------------------------------ */}
-      {/* TABLE HEADER — Clean white/charcoal to match KPI cards             */}
-      {/* ------------------------------------------------------------------ */}
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden font-sans">
       <div className="px-5 py-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-amber-50 border border-amber-200/60 flex items-center justify-center text-[#D97706] shrink-0">
@@ -97,167 +61,86 @@ export const ComplianceTable: React.FC<ComplianceTableProps> = ({
               Mine Safety &amp; Compliance Register
             </h3>
             <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-              AI risk assessment · Mines Act 1952 · CMR 2017 · DGMS Live
+              Action items and compliance tracking based on DGMS standards
             </p>
           </div>
         </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search mine, location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-60 pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B]/30 transition-all"
-          />
-        </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* TABLE                                                               */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="overflow-x-auto">
-        <Table>
-          {/* Light grey header row (#F1F5F9) with bold dark text */}
-          <TableHeader>
-            <TableRow className="bg-[#F1F5F9] border-b border-slate-200 hover:bg-[#F1F5F9]">
-              {[
-                { label: 'Mine Name', align: '' },
-                { label: 'Location', align: '' },
-                { label: 'Last Inspection', align: '' },
-                { label: 'Active Violations', align: 'text-center' },
-                { label: 'AI Risk Score', align: '' },
-                { label: 'Actions', align: 'text-right pr-6' },
-              ].map((col) => (
-                <TableHead
-                  key={col.label}
-                  className={cn(
-                    "text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3 bg-[#F1F5F9]",
-                    col.align
-                  )}
-                >
-                  {col.label}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-
-          <TableBody className="bg-white divide-y divide-slate-100">
-            {filteredData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-slate-400 font-mono text-xs">
-                  No mine records match your search.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredData.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                >
-                  {/* Mine Name */}
-                  <TableCell className="py-4 font-medium text-slate-900">
-                    <div className="flex items-center gap-2.5">
-                      <span className={cn(
-                        "h-2 w-2 rounded-full shrink-0",
-                        row.aiRiskScore > 80 ? "bg-[#EF4444] animate-pulse" :
-                        row.aiRiskScore > 50 ? "bg-[#F59E0B]" : "bg-[#10B981]"
-                      )} />
-                      <div>
-                        <div className="font-bold text-slate-900 group-hover:text-[#1E293B] leading-tight text-xs">
-                          {row.mineName}
-                        </div>
-                        {row.subsidiary && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            {row.subsidiary}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Location */}
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-1.5 text-slate-600 text-xs">
-                      <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                      {row.location}
-                    </div>
-                  </TableCell>
-
-                  {/* Last Inspection */}
-                  <TableCell className="py-4 font-mono text-slate-500 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-                      {row.lastInspectionDate}
-                    </div>
-                  </TableCell>
-
-                  {/* Active Violations */}
-                  <TableCell className="py-4 text-center">
-                    {row.activeViolations > 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#EF4444]/10 text-[#DC2626] border border-[#EF4444]/20">
-                        <AlertTriangle className="h-3 w-3" />
-                        {row.activeViolations}
-                      </span>
+      <div className="p-5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4 bg-slate-100 border border-slate-200">
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="text-xs data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {tabs.map((tab) => (
+            <TabsContent key={tab} value={tab}>
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#F1F5F9] border-b border-slate-200 hover:bg-[#F1F5F9]">
+                      <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3">Issue/Action</TableHead>
+                      <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3">Location/Zone</TableHead>
+                      <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3">Due Date</TableHead>
+                      <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3">Assigned To</TableHead>
+                      <TableHead className="text-slate-700 font-bold text-[11px] uppercase tracking-wider py-3">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="bg-white divide-y divide-slate-100">
+                    {mockActions[tab].length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10 text-center text-slate-400 font-mono text-xs">
+                          No actions found for this category.
+                        </TableCell>
+                      </TableRow>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#10B981]/10 text-[#059669] border border-[#10B981]/20">
-                        0 Clean
-                      </span>
+                      mockActions[tab].map((row) => (
+                        <TableRow key={row.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
+                          <TableCell className="py-3 font-medium text-slate-900 text-xs">
+                            <div className="flex items-center gap-2">
+                              {row.status === 'Overdue' ? <AlertCircle className="h-4 w-4 text-red-500" /> : row.status === 'Closed' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                              {row.issue}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+                              <MapPin className="h-3 w-3 text-slate-400" />
+                              {row.location}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 text-slate-600 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3 w-3 text-slate-400" />
+                              {row.dueDate}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 text-slate-600 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <User className="h-3 w-3 text-slate-400" />
+                              {row.assignedTo}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center",
+                              statusColors[row.status] || statusColors['Pending']
+                            )}>
+                              {row.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
-                  </TableCell>
-
-                  {/* AI Risk Score Badge */}
-                  <TableCell className="py-4">
-                    {renderRiskBadge(row.aiRiskScore)}
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell className="py-4 text-right pr-5">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDispatch(row); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-[#0F172A] font-bold text-[11px] rounded-md transition-colors shadow-sm"
-                      >
-                        <HardHat className="h-3.5 w-3.5" />
-                        Dispatch Inspector
-                      </button>
-
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleView(row); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 text-slate-700 font-semibold text-[11px] rounded-md transition-colors shadow-sm"
-                      >
-                        <Eye className="h-3.5 w-3.5 text-slate-500" />
-                        View Details
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* TABLE FOOTER                                                         */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono text-slate-500">
-        <div>
-          Showing <span className="font-bold text-slate-700">{filteredData.length}</span> of {data.length} colliery sites
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#10B981]" />Low (&lt;50)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />Medium (50–80)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#EF4444]" />High (&gt;80)
-          </span>
-        </div>
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </div>
   );

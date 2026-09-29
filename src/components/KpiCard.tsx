@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 export interface KpiCardProps {
   title: string;
   value: string | number;
-  trend?: 'up' | 'down';
+  trend?: 'up' | 'down' | 'warning' | 'neutral';
   trendValue?: string;
   icon: React.ReactNode;
   className?: string;
@@ -63,6 +63,16 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             {trend === 'down' && (
               <span className="inline-flex items-center gap-0.5 text-[#EF4444] font-bold">
                 <ArrowDown className="h-3.5 w-3.5 stroke-[2.5]" />
+                {trendValue}
+              </span>
+            )}
+            {trend === 'warning' && (
+              <span className="inline-flex items-center gap-0.5 text-[#F59E0B] font-bold">
+                {trendValue}
+              </span>
+            )}
+            {trend === 'neutral' && (
+              <span className="inline-flex items-center gap-0.5 text-slate-500 font-bold">
                 {trendValue}
               </span>
             )}

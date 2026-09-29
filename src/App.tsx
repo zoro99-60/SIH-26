@@ -16,6 +16,10 @@ import {
   Users,
   Download,
   ChevronRight,
+  FileWarning,
+  Clock,
+  ClipboardCheck,
+  Leaf,
 } from 'lucide-react';
 import { KpiCard } from '@/components/KpiCard';
 import { ComplianceTable } from '@/components/ComplianceTable';
@@ -35,7 +39,7 @@ interface AlertItem {
 const App: React.FC = () => {
   // State for interactive command center controls
   const [activeNav, setActiveNav] = useState('dashboard');
-  const [userRole, setUserRole] = useState<'Mine Official (DGMS Inspector)' | 'CIL HQ Overseer' | 'Pit Safety Officer'>('Mine Official (DGMS Inspector)');
+  const [userRole, setUserRole] = useState<'Mine Official' | 'Corporate HQ' | 'Field Inspector' | 'Safety Officer'>('Mine Official');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<string[]>([]);
@@ -253,9 +257,10 @@ const App: React.FC = () => {
                     Switch Governance Perspective
                   </div>
                   {[
-                    'Mine Official (DGMS Inspector)',
-                    'CIL HQ Overseer',
-                    'Pit Safety Officer',
+                    'Mine Official',
+                    'Corporate HQ',
+                    'Field Inspector',
+                    'Safety Officer',
                   ].map((role) => (
                     <button
                       key={role}
@@ -331,44 +336,46 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* --------------------------------------------------------------------- */}
-          {/* ROW 1: 5 KPI CARDS */}
-          {/* --------------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {userRole === 'Mine Official' && (
+            <>
+              {/* --------------------------------------------------------------------- */}
+              {/* ROW 1: 5 KPI CARDS */}
+              {/* --------------------------------------------------------------------- */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <KpiCard
-              title="DGMS Compliance Index"
+              title="Mine Compliance Score"
               value="96.4%"
               trend="up"
               trendValue="+1.8% vs target"
               icon={<ShieldCheck />}
             />
             <KpiCard
-              title="Active Overburden Dump"
-              value="32,450 MT/d"
-              trend="up"
-              trendValue="98.2% of target cap"
-              icon={<Pickaxe />}
-            />
-            <KpiCard
-              title="High-Risk Violations"
-              value="3 Critical"
+              title="Critical Risks"
+              value="3"
               trend="down"
-              trendValue="-2 vs yesterday"
-              icon={<AlertOctagon />}
+              trendValue="Requires immediate action"
+              icon={<AlertTriangle />}
             />
             <KpiCard
-              title="Workforce & Fleet Telemetry"
-              value="528 Miners"
+              title="Open Violations"
+              value="12"
               trend="up"
-              trendValue="+12 on shift duty"
-              icon={<HardHat />}
+              trendValue="-2 vs last week"
+              icon={<FileWarning />}
             />
             <KpiCard
-              title="Active Contractors"
-              value="14"
-              trend="up"
-              trendValue="Compliance: 92%"
-              icon={<Users />}
+              title="Overdue Actions"
+              value="5"
+              trend="warning"
+              trendValue="Past deadline"
+              icon={<Clock />}
+            />
+            <KpiCard
+              title="Today's Inspections"
+              value="4"
+              trend="neutral"
+              trendValue="2 Pending, 2 Completed"
+              icon={<ClipboardCheck />}
             />
           </div>
 
@@ -386,7 +393,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
                   <span className="font-bold text-xs uppercase tracking-wider">
-                    AI Hazard Detection Feed
+                    Critical Issues - Top 5 Immediate Attention
                   </span>
                 </div>
                 <span className="bg-[#EF4444] text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
@@ -396,7 +403,7 @@ const App: React.FC = () => {
 
               {/* Alert Feed Scroll Area */}
               <div className="p-3 flex-1 overflow-y-auto space-y-3 divide-y divide-slate-100 max-h-[440px]">
-                {alerts.map((alert) => {
+                {alerts.slice(0, 5).map((alert) => {
                   const isAck = acknowledgedAlerts.includes(alert.id);
                   return (
                     <div key={alert.id} className="pt-3 first:pt-0">
@@ -468,6 +475,82 @@ const App: React.FC = () => {
           {/* ROW 3: COMPLIANCE & STATUTORY DATA TABLE (using shadcn/ui Table) */}
           {/* --------------------------------------------------------------------- */}
           <ComplianceTable />
+
+          {/* --------------------------------------------------------------------- */}
+          {/* ROW 4: ENVIRONMENTAL WIDGET */}
+          {/* --------------------------------------------------------------------- */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 mt-5 mb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Leaf className="h-4 w-4 text-[#10B981]" />
+              <h3 className="font-bold text-sm tracking-tight text-slate-900">
+                Environmental Monitoring (Real-time)
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM10</div>
+                <div className="flex items-end gap-2">
+                  <span className="text-lg font-black text-slate-800">45 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
+                  <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM2.5</div>
+                <div className="flex items-end gap-2">
+                  <span className="text-lg font-black text-slate-800">28 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
+                  <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Water pH</div>
+                <div className="flex items-end gap-2">
+                  <span className="text-lg font-black text-slate-800">7.2</span>
+                  <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Normal</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border border-amber-200 bg-amber-50/50 flex flex-col justify-center">
+                <div className="text-[10px] uppercase font-bold text-amber-700 mb-1 flex items-center gap-1">
+                  Noise Level <AlertTriangle className="h-3 w-3" />
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="text-lg font-black text-amber-900">82 <span className="text-xs font-semibold text-amber-700/70">dB</span></span>
+                  <span className="text-[10px] font-bold text-[#D97706] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1.5 py-0.5 rounded-sm">Warning</span>
+                </div>
+              </div>
+            </div>
+          </div>
+            </>
+          )}
+
+          {userRole === 'Corporate HQ' && (
+            <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm mt-4">
+              <div className="text-center">
+                <Building2 className="h-12 w-12 text-[#F59E0B] mx-auto mb-3" />
+                <h2 className="text-xl font-bold text-slate-800">Corporate HQ Dashboard</h2>
+                <p className="text-slate-500 mt-2">Strategic oversight and aggregate performance metrics will appear here.</p>
+              </div>
+            </div>
+          )}
+
+          {userRole === 'Field Inspector' && (
+            <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm mt-4">
+              <div className="text-center">
+                <MapIcon className="h-12 w-12 text-[#F59E0B] mx-auto mb-3" />
+                <h2 className="text-xl font-bold text-slate-800">Field Inspector View</h2>
+                <p className="text-slate-500 mt-2">Active inspection logs, mobile telemetry, and field reports will appear here.</p>
+              </div>
+            </div>
+          )}
+
+          {userRole === 'Safety Officer' && (
+            <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-slate-200 shadow-sm mt-4">
+              <div className="text-center">
+                <ShieldCheck className="h-12 w-12 text-[#F59E0B] mx-auto mb-3" />
+                <h2 className="text-xl font-bold text-slate-800">Safety Officer Command Center</h2>
+                <p className="text-slate-500 mt-2">Incident management, safety audits, and real-time alerts focus will appear here.</p>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
