@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HardHat,
   AlertTriangle,
@@ -31,6 +31,10 @@ import { MineMap } from '@/components/MineMap';
 import { HQDashboard } from '@/components/HQDashboard';
 import { FieldInspectorView } from '@/components/FieldInspectorView';
 import { SafetyOfficerView } from '@/components/SafetyOfficerView';
+import { DGMSInspectorView } from '@/components/DGMSInspectorView';
+import { Sidebar } from '@/components/Sidebar';
+import { DynamicModulePage } from '@/components/DynamicModulePage';
+import { Toaster, toast } from 'sonner';
 
 // Type definitions for data integrity
 interface AlertItem {
@@ -94,10 +98,49 @@ const App: React.FC = () => {
   // State for interactive command center controls & navigation
   const [activeNav, setActiveNav] = useState('dashboard');
   const [activePage, setActivePage] = useState<string>('Dashboard');
-  const [userRole, setUserRole] = useState<'Mine Official' | 'Corporate HQ' | 'Field Inspector' | 'Safety Officer'>('Mine Official');
+  const [userRole, setUserRole] = useState<'Mine Official' | 'Corporate HQ' | 'Corporate Management' | 'DGMS Inspector' | 'Field Inspector' | 'Safety Officer'>('Mine Official');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<string[]>([]);
+
+  // Simulated critical push notification
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      toast.custom((t) => (
+        <div className="bg-[#1E293B] border-l-4 border-l-[#EF4444] border-t border-r border-b border-slate-700 rounded-lg shadow-2xl p-4 w-[380px] pointer-events-auto flex flex-col gap-2 animate-in slide-in-from-right-8 fade-in duration-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-[#EF4444]/15 rounded-full shrink-0 mt-0.5 border border-[#EF4444]/30">
+              <AlertTriangle className="h-5 w-5 text-[#EF4444]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-black text-[#EF4444] text-sm uppercase tracking-wide mb-1">
+                CRITICAL HAZARD DETECTED
+              </h3>
+              <p className="text-slate-200 text-xs leading-relaxed font-medium">
+                Methane Spike in Seam IV at Jharia Colliery. Immediate action required.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-700/50">
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            >
+              DISMISS
+            </button>
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="px-3 py-1.5 bg-[#EF4444] hover:bg-red-600 text-white text-[11px] font-black tracking-wide rounded transition-colors shadow-sm"
+            >
+              VIEW DETAILS
+            </button>
+          </div>
+        </div>
+      ), { duration: 8000 });
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Helper title generator for placeholder modules
   const getPlaceholderTitle = (page: string) => {
@@ -117,11 +160,7 @@ const App: React.FC = () => {
     return `${page} Module`;
   };
 
-  const isDashboardPage =
-    activePage === 'Dashboard' ||
-    activePage === 'HQ Dashboard' ||
-    activePage === 'Assigned Work' ||
-    activePage === 'Safety Command';
+  const isDashboardPage = activePage === 'Dashboard' || activePage === 'Overview';
 
   // Sample AI Alerts Data
   const alerts: AlertItem[] = [
@@ -174,117 +213,16 @@ const App: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. LEFT SIDEBAR: FIXED DARK CHARCOAL INDUSTRIAL COMMAND NAV */}
       {/* ========================================================================= */}
-      <aside
-        className={`${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        } transition-all duration-300 ease-in-out bg-[#1E293B] text-slate-300 flex flex-col shrink-0 border-r border-slate-700/60 z-30 select-none`}
-      >
-        {/* Brand & Mining Identity */}
-        <div className="h-16 px-4 bg-[#0F172A] border-b border-slate-700/80 flex items-center justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="h-9 w-9 rounded bg-[#F59E0B] text-[#0F172A] flex items-center justify-center font-black shadow-md shrink-0">
-              <Pickaxe className="h-5 w-5 stroke-[2.5]" />
-            </div>
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-sm tracking-wider text-white uppercase truncate flex items-center gap-1.5">
-                  COAL-GOV <span className="text-[#F59E0B] text-[10px] px-1 py-0.2 rounded bg-[#F59E0B]/20 border border-[#F59E0B]/40">PRO</span>
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono tracking-tight truncate">
-                  DGMS / CIL REG-NODE 07
-                </span>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors"
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${isSidebarCollapsed ? '' : 'rotate-180'}`} />
-          </button>
-        </div>
-
-        {/* Mining Location Telemetry Pill */}
-        {!isSidebarCollapsed && (
-          <div className="p-3 bg-slate-900/60 border-b border-slate-700/40">
-            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
-              <span>MINE LEASE: ML-8924</span>
-              <span className="inline-flex items-center gap-1 text-[#10B981]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-ping" />
-                ONLINE
-              </span>
-            </div>
-            <div className="text-xs font-semibold text-slate-200 mt-0.5 truncate">
-              Jharia Colliery | Block IV Pit
-            </div>
-          </div>
-        )}
-
-        {/* Primary Industrial Navigation (Dynamic based on userRole) */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1.5">
-          {(roleNavigationConfig[userRole] || roleNavigationConfig['Mine Official']).map((item, index) => {
-            const Icon = item.icon;
-            const menuList = roleNavigationConfig[userRole] || roleNavigationConfig['Mine Official'];
-            const isActive = activeNav === item.id || (index === 0 && !menuList.some(m => m.id === activeNav));
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveNav(item.id);
-                  setActivePage(item.label);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-[#0F172A] text-[#F59E0B] border-l-4 border-[#F59E0B] shadow-inner font-semibold'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-[#F59E0B]' : 'text-slate-400'}`} />
-                  {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
-                </div>
-                {!isSidebarCollapsed && item.badge && (
-                  <span
-                    className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      isActive
-                        ? 'bg-[#F59E0B]/20 text-[#F59E0B]'
-                        : item.badge === 'ALERT' || item.badge === '4 Pending' || item.badge === '2 Pending'
-                        ? 'bg-[#EF4444]/20 text-[#EF4444]'
-                        : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom Safety Status Card */}
-        <div className="p-3 border-t border-slate-700/80 bg-[#0F172A]">
-          {!isSidebarCollapsed ? (
-            <div className="bg-[#1E293B] border border-slate-700/60 rounded p-2.5 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-slate-400">SHIFT B (Underground)</span>
-                <span className="text-[#10B981] font-bold">STABLE</span>
-              </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-[#10B981] h-full w-[94.8%]" />
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
-                <span>Safe Man-Hours: 1,840h</span>
-                <span className="text-[#F59E0B]">94.8%</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center text-[#10B981]" title="Shift B: Safe (94.8%)">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-          )}
-        </div>
-      </aside>
+      <Sidebar
+        userRole={userRole}
+        activePath={activePage}
+        onNavigate={(path, name) => {
+          setActiveNav(path);
+          setActivePage(name);
+        }}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
 
       {/* ========================================================================= */}
       {/* 2. MAIN APP SHELL: TOP HEADER & DATA-DENSE GRID */}
@@ -295,13 +233,13 @@ const App: React.FC = () => {
           {/* Left Context: Mine name & Safety Alert Banner */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#F59E0B]" />
+              <img src="/logo.png" alt="Mine Parivar Logo" className="h-6 w-auto object-contain" />
               <div>
                 <span className="font-bold text-sm tracking-wide text-white block leading-tight">
                   Jharia Colliery — Open Cast & Pit 07
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono">
-                  BCCL Coal India Ltd. • Statutory Sector: Zone 2
+                  Mine Parivar · BCCL Coal India Ltd. · Zone 2
                 </span>
               </div>
             </div>
@@ -334,6 +272,7 @@ const App: React.FC = () => {
                   </div>
                   {[
                     'Mine Official',
+                    'DGMS Inspector',
                     'Corporate HQ',
                     'Field Inspector',
                     'Safety Officer',
@@ -342,10 +281,12 @@ const App: React.FC = () => {
                       key={role}
                       onClick={() => {
                         setUserRole(role as any);
-                        const items = roleNavigationConfig[role] || [];
-                        if (items.length > 0) {
-                          setActiveNav(items[0].id);
-                          setActivePage(items[0].label);
+                        if (role === 'Mine Official') {
+                          setActiveNav('overview');
+                          setActivePage('Overview');
+                        } else {
+                          setActiveNav('dashboard');
+                          setActivePage(`${role} Dashboard`);
                         }
                         setIsRoleDropdownOpen(false);
                       }}
@@ -401,7 +342,7 @@ const App: React.FC = () => {
                 </span>
               </h1>
               <p className="text-xs text-slate-600 mt-0.5">
-                Real-time statutory governance under Coal Mines Regulations (CMR 2017) & DGMS Directives.
+                Real-time statutory governance under CMR 2017 & DGMS Directives · Powered by Mine Parivar
               </p>
             </div>
 
@@ -417,219 +358,204 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {isDashboardPage ? (
+          {userRole === 'Field Inspector' ? (
+            <FieldInspectorView />
+          ) : userRole === 'DGMS Inspector' ? (
+            <DGMSInspectorView />
+          ) : userRole === 'Safety Officer' ? (
+            <SafetyOfficerView />
+          ) : userRole === 'Corporate HQ' || userRole === 'Corporate Management' ? (
+            <HQDashboard />
+          ) : isDashboardPage ? (
             <>
-              {userRole === 'Mine Official' && (
-                <>
-                  {/* --------------------------------------------------------------------- */}
-                  {/* ROW 1: 5 KPI CARDS */}
-                  {/* --------------------------------------------------------------------- */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <KpiCard
-                      title="Mine Compliance Score"
-                      value="96.4%"
-                      trend="up"
-                      trendValue="+1.8% vs target"
-                      icon={<ShieldCheck />}
-                    />
-                    <KpiCard
-                      title="Critical Risks"
-                      value="3"
-                      trend="down"
-                      trendValue="Requires immediate action"
-                      icon={<AlertTriangle />}
-                    />
-                    <KpiCard
-                      title="Open Violations"
-                      value="12"
-                      trend="up"
-                      trendValue="-2 vs last week"
-                      icon={<FileWarning />}
-                    />
-                    <KpiCard
-                      title="Overdue Actions"
-                      value="5"
-                      trend="warning"
-                      trendValue="Past deadline"
-                      icon={<Clock />}
-                    />
-                    <KpiCard
-                      title="Today's Inspections"
-                      value="4"
-                      trend="neutral"
-                      trendValue="2 Pending, 2 Completed"
-                      icon={<ClipboardCheck />}
-                    />
+              {/* --------------------------------------------------------------------- */}
+              {/* ROW 1: 5 KPI CARDS */}
+              {/* --------------------------------------------------------------------- */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <KpiCard
+                  title="Mine Compliance Score"
+                  value="96.4%"
+                  trend="up"
+                  trendValue="+1.8% vs target"
+                  icon={<ShieldCheck />}
+                />
+                <KpiCard
+                  title="Critical Risks"
+                  value="3"
+                  trend="down"
+                  trendValue="Requires immediate action"
+                  icon={<AlertTriangle />}
+                />
+                <KpiCard
+                  title="Open Violations"
+                  value="12"
+                  trend="up"
+                  trendValue="-2 vs last week"
+                  icon={<FileWarning />}
+                />
+                <KpiCard
+                  title="Overdue Actions"
+                  value="5"
+                  trend="warning"
+                  trendValue="Past deadline"
+                  icon={<Clock />}
+                />
+                <KpiCard
+                  title="Today's Inspections"
+                  value="4"
+                  trend="neutral"
+                  trendValue="2 Pending, 2 Completed"
+                  icon={<ClipboardCheck />}
+                />
+              </div>
+
+              {/* --------------------------------------------------------------------- */}
+              {/* ROW 2: REACT-LEAFLET MINE MAP (2/3) + AI ALERT FEED (1/3) */}
+              {/* --------------------------------------------------------------------- */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* MINE MAP — real Leaflet, dark tiles, risk markers */}
+                <MineMap className="lg:col-span-2" />
+
+                {/* AI ALERT FEED PANEL (1/3 Width) */}
+                <div className="bg-white rounded-md border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                  <div className="p-3 bg-[#1E293B] text-white flex items-center justify-between border-b border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
+                      <span className="font-bold text-[#F59E0B] text-xs uppercase tracking-wider">
+                        Critical Issues - Top 5 Immediate Attention
+                      </span>
+                    </div>
+                    <span className="bg-[#EF4444] text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
+                      {alerts.length} ALERTS
+                    </span>
                   </div>
 
-                  {/* --------------------------------------------------------------------- */}
-                  {/* ROW 2: REACT-LEAFLET MINE MAP (2/3) + AI ALERT FEED (1/3) */}
-                  {/* --------------------------------------------------------------------- */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* MINE MAP — real Leaflet, dark tiles, risk markers */}
-                    <MineMap className="lg:col-span-2" />
-
-                    {/* AI ALERT FEED PANEL (1/3 Width) */}
-                    <div className="bg-white rounded-md border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-                      <div className="p-3 bg-[#1E293B] text-white flex items-center justify-between border-b border-slate-700">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
-                          <span className="font-bold text-[#F59E0B] text-xs uppercase tracking-wider">
-                            Critical Issues - Top 5 Immediate Attention
-                          </span>
-                        </div>
-                        <span className="bg-[#EF4444] text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
-                          {alerts.length} ALERTS
-                        </span>
-                      </div>
-
-                      {/* Alert Feed Scroll Area */}
-                      <div className="p-3 flex-1 overflow-y-auto space-y-3 divide-y divide-slate-100 max-h-[440px]">
-                        {alerts.slice(0, 5).map((alert) => {
-                          const isAck = acknowledgedAlerts.includes(alert.id);
-                          return (
-                            <div key={alert.id} className="pt-3 first:pt-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded ${
-                                      alert.severity === 'critical'
-                                        ? 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30'
-                                        : alert.severity === 'warning'
-                                        ? 'bg-[#F59E0B]/15 text-[#D97706] border border-[#F59E0B]/30'
-                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                    }`}
-                                  >
-                                    {alert.severity}
-                                  </span>
-                                  <span className="text-[10px] font-mono text-slate-400">
-                                    {alert.time}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] font-mono text-slate-400">
-                                  {alert.id}
-                                </span>
-                              </div>
-
-                              <h4 className="text-xs font-bold text-[#0F172A] mt-1">
-                                {alert.title}
-                              </h4>
-                              <p className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1">
-                                <MapIcon className="h-3 w-3 text-slate-400" />
-                                {alert.location}
-                              </p>
-                              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                                {alert.details}
-                              </p>
-
-                              <div className="mt-2.5 flex items-center gap-2">
-                                {alert.actionRequired && (
-                                  <button className="px-2.5 py-1 bg-[#1E293B] hover:bg-[#0F172A] text-white rounded text-[11px] font-semibold transition-colors flex items-center gap-1">
-                                    Dispatch Marshal
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleAcknowledge(alert.id)}
-                                  disabled={isAck}
-                                  className={`px-2.5 py-1 rounded text-[11px] font-bold border transition-all ${
-                                    isAck
-                                      ? 'bg-[#10B981] text-white border-[#10B981] cursor-not-allowed'
-                                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 hover:border-slate-400'
-                                  }`}
-                                >
-                                  {isAck ? '✅ Acknowledged' : 'Acknowledge'}
-                                </button>
-                              </div>
+                  {/* Alert Feed Scroll Area */}
+                  <div className="p-3 flex-1 overflow-y-auto space-y-3 divide-y divide-slate-100 max-h-[440px]">
+                    {alerts.slice(0, 5).map((alert) => {
+                      const isAck = acknowledgedAlerts.includes(alert.id);
+                      return (
+                        <div key={alert.id} className="pt-3 first:pt-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                  alert.severity === 'critical'
+                                    ? 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30'
+                                    : alert.severity === 'warning'
+                                    ? 'bg-[#F59E0B]/15 text-[#D97706] border border-[#F59E0B]/30'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                }`}
+                              >
+                                {alert.severity}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {alert.time}
+                              </span>
                             </div>
-                          );
-                        })}
-                      </div>
+                            <span className="text-[10px] font-mono text-slate-400">
+                              {alert.id}
+                            </span>
+                          </div>
 
-                      <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center">
-                        <button className="text-xs font-bold text-[#1E293B] hover:text-[#F59E0B] flex items-center justify-center gap-1 mx-auto transition-colors">
-                          View Complete AI Incident Log <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                          <h4 className="text-xs font-bold text-[#0F172A] mt-1">
+                            {alert.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1">
+                            <MapIcon className="h-3 w-3 text-slate-400" />
+                            {alert.location}
+                          </p>
+                          <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                            {alert.details}
+                          </p>
+
+                          <div className="mt-2.5 flex items-center gap-2">
+                            {alert.actionRequired && (
+                              <button className="px-2.5 py-1 bg-[#1E293B] hover:bg-[#0F172A] text-white rounded text-[11px] font-semibold transition-colors flex items-center gap-1">
+                                Dispatch Marshal
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleAcknowledge(alert.id)}
+                              disabled={isAck}
+                              className={`px-2.5 py-1 rounded text-[11px] font-bold border transition-all ${
+                                isAck
+                                  ? 'bg-[#10B981] text-white border-[#10B981] cursor-not-allowed'
+                                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 hover:border-slate-400'
+                              }`}
+                            >
+                              {isAck ? '✅ Acknowledged' : 'Acknowledge'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {/* --------------------------------------------------------------------- */}
-                  {/* ROW 3: COMPLIANCE & STATUTORY DATA TABLE (using shadcn/ui Table) */}
-                  {/* --------------------------------------------------------------------- */}
-                  <ComplianceTable />
+                  <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center">
+                    <button className="text-xs font-bold text-[#1E293B] hover:text-[#F59E0B] flex items-center justify-center gap-1 mx-auto transition-colors">
+                      View Complete AI Incident Log <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                  {/* --------------------------------------------------------------------- */}
-                  {/* ROW 4: ENVIRONMENTAL WIDGET */}
-                  {/* --------------------------------------------------------------------- */}
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 mt-5 mb-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Leaf className="h-4 w-4 text-[#10B981]" />
-                      <h3 className="font-bold text-sm tracking-tight text-slate-900">
-                        Environmental Monitoring (Real-time)
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM10</div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-lg font-black text-slate-800">45 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
-                          <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM2.5</div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-lg font-black text-slate-800">28 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
-                          <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Water pH</div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-lg font-black text-slate-800">7.2</span>
-                          <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Normal</span>
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-lg border border-amber-200 bg-amber-50/50 flex flex-col justify-center">
-                        <div className="text-[10px] uppercase font-bold text-amber-700 mb-1 flex items-center gap-1">
-                          Noise Level <AlertTriangle className="h-3 w-3" />
-                        </div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-lg font-black text-amber-900">82 <span className="text-xs font-semibold text-amber-700/70">dB</span></span>
-                          <span className="text-[10px] font-bold text-[#D97706] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1.5 py-0.5 rounded-sm">Warning</span>
-                        </div>
-                      </div>
+              {/* --------------------------------------------------------------------- */}
+              {/* ROW 3: COMPLIANCE & STATUTORY DATA TABLE (using shadcn/ui Table) */}
+              {/* --------------------------------------------------------------------- */}
+              <ComplianceTable />
+
+              {/* --------------------------------------------------------------------- */}
+              {/* ROW 4: ENVIRONMENTAL WIDGET */}
+              {/* --------------------------------------------------------------------- */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 mt-5 mb-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <Leaf className="h-4 w-4 text-[#10B981]" />
+                  <h3 className="font-bold text-sm tracking-tight text-slate-900">
+                    Environmental Monitoring (Real-time)
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM10</div>
+                    <div className="flex items-end gap-2">
+                      <span className="text-lg font-black text-slate-800">45 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
+                      <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
                     </div>
                   </div>
-                </>
-              )}
-
-              {userRole === 'Corporate HQ' && <HQDashboard />}
-
-              {userRole === 'Field Inspector' && <FieldInspectorView />}
-
-              {userRole === 'Safety Officer' && <SafetyOfficerView />}
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">PM2.5</div>
+                    <div className="flex items-end gap-2">
+                      <span className="text-lg font-black text-slate-800">28 <span className="text-xs font-semibold text-slate-500">µg/m³</span></span>
+                      <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Safe</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex flex-col justify-center">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Water pH</div>
+                    <div className="flex items-end gap-2">
+                      <span className="text-lg font-black text-slate-800">7.2</span>
+                      <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-sm">Normal</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-amber-200 bg-amber-50/50 flex flex-col justify-center">
+                    <div className="text-[10px] uppercase font-bold text-amber-700 mb-1 flex items-center gap-1">
+                      Noise Level <AlertTriangle className="h-3 w-3" />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <span className="text-lg font-black text-amber-900">82 <span className="text-xs font-semibold text-amber-700/70">dB</span></span>
+                      <span className="text-[10px] font-bold text-[#D97706] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1.5 py-0.5 rounded-sm">Warning</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
-            /* Placeholder view for non-dashboard navigation tabs */
-            <div className="flex flex-col items-center justify-center p-16 bg-white rounded-xl border border-slate-200 shadow-sm mt-4 text-center min-h-[440px]">
-              <div className="h-16 w-16 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center text-[#D97706] mb-4 shadow-sm">
-                <Building2 className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                {getPlaceholderTitle(activePage)}
-              </h2>
-              <p className="text-sm font-mono text-slate-500 mt-2 max-w-md">
-                Feature under development for SIH 2026 Prototype
-              </p>
-              <div className="mt-6 inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 border border-slate-200 rounded-full text-xs font-mono text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-[#F59E0B] animate-pulse" />
-                <span>Module: {activePage} • CIL/DGMS Roadmap 2026</span>
-              </div>
-            </div>
+            /* Dynamic module page for non-dashboard navigation items */
+            <DynamicModulePage moduleName={activePage} />
           )}
         </main>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 };

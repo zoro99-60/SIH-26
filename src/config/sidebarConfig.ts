@@ -211,3 +211,6 @@ export const SIDEBAR_CONFIG: Record<UserRoleKey, SidebarSection[]> = {
     },
   ],
 };
+
+export default SIDEBAR_CONFIG;
+
